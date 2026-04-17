@@ -1,4 +1,5 @@
 #include "model.hpp"
+#include "assimp/mesh.h"
 #include "graphics/idrawable.hpp"
 #include "graphics/material.hpp"
 #include "graphics/texture.hpp"
@@ -8,13 +9,17 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <glm/fwd.hpp>
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <filesystem>
 #include <format>
 #include <memory>
+#include <optional>
 #include <print>
 #include <string_view>
 
@@ -260,30 +265,52 @@ std::shared_ptr<Texture> Model::_loadMaterialTexture(aiMaterial *mat,
     aiString path;
     mat->GetTexture(type, i, &path);
 
+    // 1. Check for Embedded Textures (e.g. GLB files or fully embedded FBX)
+    // GetEmbeddedTexture dynamically resolves indices (like "*0") or absolute
+    // string bindings.
+    const aiTexture *embedded_tex = scene->GetEmbeddedTexture(path.C_Str());
+
     std::string unique_name;
 
-    if (path.C_Str()[0] == '*') {
+    if (embedded_tex) {
+      // If embedded, namespace the texture name to the model path to prevent
+      // collisions
       unique_name = std::format("{}:{}", m_path, path.C_Str());
     } else {
-      unique_name = std::format("{}/{}", m_directory, path.C_Str());
+      // 2. Not Embedded, external asset lookup
+      std::string_view path_str = path.C_Str();
+      std::string standard_path = std::format("{}/{}", m_directory, path_str);
+
+      if (std::filesystem::exists(standard_path)) {
+        // Attempt valid relative paths properly dictated by formats like .mtl
+        // (e.g. "textures/rock.png")
+        unique_name = standard_path;
+      } else {
+        // 3. Fallback: For broken Assimp imports housing absolute rigid paths
+        // (e.g. "/home/foo/bar...") We aggressively strip all broken
+        // directories and assume the file rests alongside the 3D model in
+        // m_directory.
+        auto last_slash = path_str.find_last_of("/\\");
+        std::string_view filename = (last_slash != std::string::npos)
+                                        ? path_str.substr(last_slash + 1)
+                                        : path_str;
+        unique_name = std::format("{}/{}", m_directory, filename);
+      }
     }
 
     TextureName texture_name(std::move(unique_name));
 
     if (!TextureManager::exists(texture_name)) {
-      if (path.C_Str()[0] == '*') {
-        int index = std::stoi(path.C_Str() + 1);
-        aiTexture *aiTex = scene->mTextures[index];
-
-        if (aiTex->mHeight == 0) {
-          return TextureManager::loadTexture(texture_name, typeName,
-                                             aiTex->pcData, aiTex->mWidth,
-                                             flip_vertical);
+      if (embedded_tex) {
+        if (embedded_tex->mHeight == 0) {
+          return TextureManager::loadTexture(
+              texture_name, typeName, embedded_tex->pcData,
+              embedded_tex->mWidth, flip_vertical);
         }
 
         return TextureManager::loadTexture(
-            texture_name, typeName, aiTex->pcData,
-            aiTex->mWidth * aiTex->mHeight * 4, flip_vertical);
+            texture_name, typeName, embedded_tex->pcData,
+            embedded_tex->mWidth * embedded_tex->mHeight * 4, flip_vertical);
       }
 
       return TextureManager::loadTexture(texture_name, typeName,
@@ -297,14 +324,14 @@ std::shared_ptr<Texture> Model::_loadMaterialTexture(aiMaterial *mat,
 }
 
 void Model::_setVertexBoneDataToDefault(Vertex &vertex) {
-  for (int i = 0; i < MAX_BONE_INFLUENCE; i++) {
+  for (size_t i = 0; i < MAX_BONE_INFLUENCE; i++) {
     vertex.m_boneIDs[i] = -1;
     vertex.m_weights[i] = 0.0f;
   }
 }
 
-void Model::_setVertexBoneData(Vertex &vertex, int bone_id, float weight) {
-  for (int i = 0; i < MAX_BONE_INFLUENCE; ++i) {
+void Model::_setVertexBoneData(Vertex &vertex, uint32_t bone_id, float weight) {
+  for (size_t i = 0; i < MAX_BONE_INFLUENCE; ++i) {
     if (vertex.m_boneIDs[i] < 0) {
       vertex.m_weights[i] = weight;
       vertex.m_boneIDs[i] = bone_id;
@@ -316,7 +343,7 @@ void Model::_setVertexBoneData(Vertex &vertex, int bone_id, float weight) {
 void Model::_extractBoneWeightForVertices(std::vector<Vertex> &vertices,
                                           aiMesh *mesh) {
   for (size_t bone_index = 0; bone_index < mesh->mNumBones; ++bone_index) {
-    int bone_id = -1;
+    std::optional<uint32_t> bone_id;
     std::string bone_name = mesh->mBones[bone_index]->mName.C_Str();
 
     if (m_boneInfoMap.find(bone_name) == m_boneInfoMap.end()) {
@@ -324,26 +351,27 @@ void Model::_extractBoneWeightForVertices(std::vector<Vertex> &vertices,
       new_bone_info.id = m_boneCount;
 
       glm::mat4 target_mat;
-      memcpy(glm::value_ptr(target_mat),
-             &mesh->mBones[bone_index]->mOffsetMatrix, sizeof(float) * 16);
+      std::memcpy(glm::value_ptr(target_mat),
+                  &mesh->mBones[bone_index]->mOffsetMatrix, sizeof(float) * 16);
       new_bone_info.offset = glm::transpose(target_mat);
 
       m_boneInfoMap[bone_name] = new_bone_info;
-      bone_id = m_boneCount;
-      m_boneCount++;
+      bone_id = m_boneCount++;
     } else {
       bone_id = m_boneInfoMap[bone_name].id;
     }
 
-    assert(bone_id != -1);
-    auto weights = mesh->mBones[bone_index]->mWeights;
-    int num_weights = mesh->mBones[bone_index]->mNumWeights;
+    assert(bone_id.has_value());
 
-    for (int weight_index = 0; weight_index < num_weights; ++weight_index) {
-      int vertex_id = weights[weight_index].mVertexId;
+    aiVertexWeight *weights = mesh->mBones[bone_index]->mWeights;
+    size_t num_weights = mesh->mBones[bone_index]->mNumWeights;
+
+    for (size_t weight_index = 0; weight_index < num_weights; ++weight_index) {
+      size_t vertex_id = weights[weight_index].mVertexId;
       float weight = weights[weight_index].mWeight;
+
       assert(vertex_id <= vertices.size());
-      _setVertexBoneData(vertices[vertex_id], bone_id, weight);
+      _setVertexBoneData(vertices[vertex_id], bone_id.value(), weight);
     }
   }
 }

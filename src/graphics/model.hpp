@@ -49,7 +49,7 @@ private:
                                                 bool flip_vertical);
 
   void _setVertexBoneDataToDefault(Vertex &vertex);
-  void _setVertexBoneData(Vertex &vertex, int bone_id, float weight);
+  void _setVertexBoneData(Vertex &vertex, uint32_t bone_id, float weight);
   void _extractBoneWeightForVertices(std::vector<Vertex> &vertices,
                                      aiMesh *mesh);
 };
