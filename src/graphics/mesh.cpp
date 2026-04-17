@@ -110,6 +110,25 @@ void Mesh::_setupMesh() {
                             GL_FALSE,
                             offsetof(Vertex, bitangent));
   glVertexArrayAttribBinding(m_vao, 4, 0);
+
+  // BoneIDs ivec4
+  glEnableVertexArrayAttrib(m_vao, 5);
+  glVertexArrayAttribIFormat(m_vao,
+                             5,
+                             MAX_BONE_INFLUENCE,
+                             GL_INT,
+                             offsetof(Vertex, m_boneIDs));
+  glVertexArrayAttribBinding(m_vao, 5, 0);
+
+  // Weights vec4
+  glEnableVertexArrayAttrib(m_vao, 6);
+  glVertexArrayAttribFormat(m_vao,
+                            6,
+                            MAX_BONE_INFLUENCE,
+                            GL_FLOAT,
+                            GL_FALSE,
+                            offsetof(Vertex, m_weights));
+  glVertexArrayAttribBinding(m_vao, 6, 0);
 }
 
 void Mesh::draw(const RenderContext &ctx) { draw(ctx, m_material); }

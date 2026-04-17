@@ -12,4 +12,5 @@ struct RenderContext {
 class IDrawable {
 public:
   virtual void draw(const RenderContext &ctx) = 0;
+  virtual ~IDrawable() {}
 };

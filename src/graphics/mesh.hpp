@@ -10,12 +10,16 @@
 
 #include <vector>
 
+#define MAX_BONE_INFLUENCE 4
+
 struct Vertex {
   glm::vec3 position;
   glm::vec3 normal;
   glm::vec2 texCoords;
   glm::vec3 tangent;
   glm::vec3 bitangent;
+  int m_boneIDs[MAX_BONE_INFLUENCE];
+  float m_weights[MAX_BONE_INFLUENCE];
 };
 
 class Mesh : public IDrawable {
@@ -37,7 +41,6 @@ public:
 
   ~Mesh();
 
-  // Delete all kind copy constrcutor for now
   Mesh(const Mesh &) = delete;
   Mesh &operator=(const Mesh &) = delete;
   Mesh(Mesh &&other) noexcept;

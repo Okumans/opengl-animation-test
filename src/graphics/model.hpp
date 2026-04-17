@@ -7,12 +7,20 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include "graphics/animation_data.hpp"
+#include <cstdint>
+#include <map>
+#include <string>
+
 class Model : public IDrawable {
 private:
   // model data
   std::vector<Mesh> m_meshes;
   std::string m_directory;
   std::string m_path;
+
+  std::map<std::string, BoneInfo> m_boneInfoMap;
+  uint32_t m_boneCount = 0;
 
 public:
   Model(const char *path, bool flip_vertical = false);
@@ -25,6 +33,9 @@ public:
   void draw(const RenderContext &ctx) override;
   const std::vector<Mesh> &getMeshes() const { return m_meshes; }
 
+  std::map<std::string, BoneInfo> &getBoneInfoMap() { return m_boneInfoMap; }
+  uint32_t &getBoneCount() { return m_boneCount; }
+
 private:
   void _loadModel(const char *path, bool flip_vertical);
   void _processNode(aiNode *node, const aiScene *scene, bool flip_vertical,
@@ -36,4 +47,9 @@ private:
                                                 aiTextureType type,
                                                 TextureType typeName,
                                                 bool flip_vertical);
+
+  void _setVertexBoneDataToDefault(Vertex &vertex);
+  void _setVertexBoneData(Vertex &vertex, int bone_id, float weight);
+  void _extractBoneWeightForVertices(std::vector<Vertex> &vertices,
+                                     aiMesh *mesh);
 };

@@ -1,9 +1,11 @@
 #include "game.hpp"
 
+#include "graphics/debug_drawer.hpp"
 #include "graphics/ibl_generator.hpp"
 #include "graphics/idrawable.hpp"
 #include "graphics/shader.hpp"
 #include "resource/lighting_manager.hpp"
+#include "resource/model_manager.hpp"
 #include "resource/shader_manager.hpp"
 #include "resource/texture_manager.hpp"
 
@@ -14,9 +16,9 @@
 
 Game::Game()
     : m_camera(glm::vec3(0.0f, 10.0f, 10.0f)),
-      m_cameraController(m_camera, glm::vec3(0.0f, 0.0f, 0.0f)),
-      m_skybox(std::make_unique<Skybox>()),
-      m_shadowMapFBO(0), m_shadowMapTex(0), m_state(GameState::LOADING) {
+      m_cameraController(m_camera, glm::vec3(0.0f, 12.0f, 10.0f)),
+      m_skybox(std::make_unique<Skybox>()), m_shadowMapFBO(0),
+      m_shadowMapTex(0), m_state(GameState::LOADING) {
   m_camera.setPitch(-45.0f);
   m_camera.setYaw(-90.0f);
   m_camera.Zoom = 45.0f;
@@ -93,6 +95,10 @@ void Game::setup() {
                              .position = glm::vec3(0.0f, -5.0f, 0.0f),
                              .color = glm::vec3(0.3f, 0.2f, 0.1f) * 5.0f});
 
+  m_testObject = std::make_unique<GameObject>(
+      ModelManager::getModel(ModelName::KASANE_TETO));
+  m_testObject->setScale(0.2f);
+
   reset();
 }
 
@@ -142,7 +148,12 @@ void Game::render(double delta_time) {
   glClear(GL_DEPTH_BUFFER_BIT);
   glDisable(GL_CULL_FACE);
 
-  // No objects to draw yet
+  {
+    RenderContext shadow_draw_ctx = {
+        .shader = shadow_shader, .camera = m_camera, .deltaTime = delta_time};
+    if (m_testObject)
+      m_testObject->draw(shadow_draw_ctx);
+  }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glCullFace(GL_BACK); // Restore back-face culling
@@ -199,10 +210,21 @@ void Game::render(double delta_time) {
   pbr_shader.setFloat("u_AOFactor", 1.0f);
   pbr_shader.setFloat("u_AmbientIntensity", 1.0f);
 
-  if (m_debugAABB) {
+  if (m_testObject) {
+    pbr_shader.setVec3("u_BaseColor", glm::vec3(1.0f));
+    pbr_shader.setVec2("u_UVOffset", glm::vec2(0.0f));
+    RenderContext ctx = {
+        .shader = pbr_shader, .camera = m_camera, .deltaTime = delta_time};
+    m_testObject->draw(ctx);
+  }
+
+  if (m_debugAABB && m_testObject) {
     RenderContext debugCtx = {
         .shader = pbr_shader, .camera = m_camera, .deltaTime = delta_time};
-    (void)debugCtx; // No AABBs to debug for now
+    DebugDrawer::drawAABB(debugCtx, m_testObject->getHitboxAABB(),
+                          {1.0f, 0.0f, 0.0f});
+    DebugDrawer::drawAABB(debugCtx, m_testObject->getWorldAABB(),
+                          {1.0f, 1.0f, 0.0f});
   }
 
   glDisable(GL_BLEND);
@@ -211,5 +233,7 @@ void Game::render(double delta_time) {
 
 void Game::_updateCamera(double delta_time) {
   (void)delta_time;
-  // m_cameraController maintains target correctly.
+  if (m_testObject) {
+    m_cameraController.follow(m_testObject->getPosition());
+  }
 }

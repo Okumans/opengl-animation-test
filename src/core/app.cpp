@@ -5,13 +5,10 @@
 
 #include "GLFW/glfw3.h"
 #include "glm/fwd.hpp"
-#include "graphics/material.hpp"
-#include "resource/material_manager.hpp"
 #include "resource/model_manager.hpp"
 #include "resource/shader_manager.hpp"
 #include "resource/texture_manager.hpp"
 #include "ui/ui_manager.hpp"
-#include "utility/utility.hpp"
 
 #ifdef EMBED_SHADER
 #include "debug.frag.glsl.h"
@@ -131,6 +128,11 @@ App::App(GLFWwindow *window) : m_window(window) {
 App::~App() = default;
 
 void App::_setupResources() {
+  // Helpers
+  auto loadModel = [](ModelName name, const std::string &path) {
+    return [name, path]() { ModelManager::loadModel(name, path.c_str()); };
+  };
+
   // Shaders
 #ifndef EMBED_SHADER
   m_loadingTasks.push_back(
@@ -175,8 +177,14 @@ void App::_setupResources() {
                TextureManager::generateStaticPBRDefaultTexture());
        }});
 
-  // Materials (No longer needed, removed)
+  // Materials
+  ;
 
+  // Models
+  m_loadingTasks.push_back(
+      {"Model: Kasane Teto",
+       loadModel(ModelName::KASANE_TETO,
+                 ASSETS_PATH "/objects/kasane_teto/teto_jogging.fbx")});
 
   // Skybox
   m_loadingTasks.push_back(
@@ -207,7 +215,7 @@ void App::_setupUIElements() {
   // Loading Screen
   m_uiManager.addTextElement("loading_title", {0.0f, 15.0f, 0.0f, 0.0f},
                              "LOADING...", m_font, {1.0f, 1.0f, 1.0f, 1.0f},
-                             0.4f);
+                             0.3f);
   m_uiManager.addTextElement("loading_status", {0.0f, 22.0f, 0.0f, 0.0f},
                              "Initializing...", m_font,
                              {0.7f, 0.7f, 0.7f, 1.0f}, 0.15f);
@@ -224,8 +232,8 @@ void App::_setupUIElements() {
 
   // Start Screen
   m_uiManager.addTextElement("start_title", {0.0f, 15.0f, 0.0f, 0.0f},
-                             "VAMPIRE SURVIVOR", m_font, {1.0f, 0.0f, 0.0f, 1.0f},
-                             0.4f);
+                             "VAMPIRE SURVIVOR", m_font,
+                             {1.0f, 0.0f, 0.0f, 1.0f}, 0.3f);
   m_uiManager.addTextElement("start_hint", {0.0f, 20.0f, 0.0f, 0.0f},
                              "CLICK TO START", m_font, {1.0f, 1.0f, 1.0f, 1.0f},
                              0.15f);
@@ -296,10 +304,14 @@ void App::_updateUIElements(double delta_time) {
 }
 
 void App::_handleProcessInput(double delta_time) {
+  (void)delta_time;
   // Movement handled in camera controller or character controller later
 }
 
 void App::_handleKeyCallback(int key, int scancode, int action, int mods) {
+  (void)scancode;
+  (void)mods;
+
   if (action != GLFW_PRESS)
     return;
 
@@ -327,13 +339,18 @@ void App::_handleMouseMoveCallback(double pos_x, double pos_y) {
 }
 
 void App::_handleMouseClickCallback(int button, int action, int mods) {
+  (void)mods;
+
   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
     m_uiManager.handleClick(m_appState.inputState.mouseLastX,
                             m_appState.inputState.mouseLastY);
   }
 }
 
-void App::_handleScrollCallback(double offset_x, double offset_y) {}
+void App::_handleScrollCallback(double offset_x, double offset_y) {
+  (void)offset_x;
+  (void)offset_y;
+}
 
 void App::_handleFramebufferSizeCallback(int width, int height) {
   glViewport(0, 0, width, height);
