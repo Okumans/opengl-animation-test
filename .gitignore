@@ -48,4 +48,5 @@ install
 cmake-*
 
 # Assets folder (for now)
-assets/
+assets/objects/
+assets/textures/
