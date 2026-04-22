@@ -5,6 +5,7 @@
 #include "glm/geometric.hpp"
 #include "glm/trigonometric.hpp"
 #include "graphics/animation.hpp"
+#include "graphics/animation_state.hpp"
 #include "graphics/animator.hpp"
 #include "resource/animation_manager.hpp"
 #include "scene/game_object.hpp"
@@ -12,52 +13,9 @@
 #include "utility/not_initialized.hpp"
 #include "utility/utility.hpp"
 #include <cassert>
-#include <concepts>
 #include <memory>
 
 enum class PlayerAnimation { IDLE, WALKING };
-
-template <typename T, typename Counter = float>
-  requires std::integral<Counter> || std::floating_point<Counter>
-struct AnimationState {
-  NotInitialized<Counter, "duration"> duration;
-  Counter timer;
-
-  T target;
-  T start;
-
-  bool animationStarted;
-
-  Counter updateTimer(Counter delta_time) {
-    timer += delta_time;
-    return timer;
-  };
-
-  void startAnimation(T start, T target) {
-    this->start = start;
-    this->target = target;
-    this->timer = 0;
-    this->animationStarted = true;
-  }
-
-  void reset() {
-    animationStarted = false;
-    timer = 0;
-  }
-
-  [[nodiscard]] Counter getProgress() const noexcept {
-    if (duration.ensureInitialized() <= 0)
-      return 1.0f;
-
-    Counter t = timer / duration.ensureInitialized();
-
-    if (t > 1.0)
-      return 1.0;
-    if (t < 0.0)
-      return 0.0;
-    return t;
-  }
-};
 
 class Player : public GameObject {
 private:
@@ -150,10 +108,13 @@ private:
   void _setAnimation(PlayerAnimation animation) {
     if (animation != m_playingAnimation) {
       m_playingAnimation = animation;
+      float blend_duration =
+          (m_playingAnimation == PlayerAnimation::WALKING) ? 0.12f : 0.18f;
       m_animator.ensureInitialized().playAnimation(
           m_animations.ensureInitialized()
               .get_checked(m_playingAnimation)
-              .get());
+              .get(),
+          blend_duration);
     }
   }
 

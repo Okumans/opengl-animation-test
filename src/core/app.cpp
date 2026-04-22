@@ -345,7 +345,7 @@ void App::_updateUIElements(double delta_time) {
 void App::_handleProcessInput(double delta_time) {
   (void)delta_time;
 
-  const float step_amount = 0.6f;
+  const float step_amount = 0.8f;
   glm::vec3 direction(0.0f);
 
   if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS ||
