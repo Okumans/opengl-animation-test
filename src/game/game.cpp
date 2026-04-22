@@ -91,6 +91,11 @@ void Game::setup() {
   m_player->setScale(20.0f);
   m_player->setup();
 
+  m_testEnemy =
+      std::make_unique<Enemy>(ModelManager::copy(ModelName::HATSUNE_MIKU));
+  m_testEnemy->setScale(60.0f);
+  m_testEnemy->setup();
+
   reset();
 }
 
@@ -123,6 +128,7 @@ void Game::update(double delta_time) {
   _updateCamera(delta_time);
   m_cameraController.update(static_cast<float>(delta_time));
   m_player->update(delta_time);
+  m_testEnemy->update(delta_time);
 }
 
 void Game::movePlayer(glm::vec3 vec) { m_player->moveWithAnimation(vec); }
@@ -152,6 +158,8 @@ void Game::render(double delta_time) {
 
     if (m_player)
       m_player->draw(shadow_draw_ctx);
+    if (m_testEnemy)
+      m_testEnemy->draw(shadow_draw_ctx);
   }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -218,9 +226,10 @@ void Game::render(double delta_time) {
         .deltaTime = delta_time,
     };
     m_player->draw(ctx);
+    m_testEnemy->draw(ctx);
   }
 
-  if (m_debugAABB && m_player) {
+  if (false && m_debugAABB && m_player) {
     RenderContext debug_ctx = {
         .shader = pbr_shader,
         .camera = m_camera,
@@ -229,6 +238,11 @@ void Game::render(double delta_time) {
     DebugDrawer::drawAABB(debug_ctx, m_player->getHitboxAABB(),
                           {1.0f, 0.0f, 0.0f});
     DebugDrawer::drawAABB(debug_ctx, m_player->getWorldAABB(),
+                          {1.0f, 1.0f, 0.0f});
+
+    DebugDrawer::drawAABB(debug_ctx, m_testEnemy->getHitboxAABB(),
+                          {1.0f, 0.0f, 0.0f});
+    DebugDrawer::drawAABB(debug_ctx, m_testEnemy->getWorldAABB(),
                           {1.0f, 1.0f, 0.0f});
   }
 
@@ -239,7 +253,7 @@ void Game::render(double delta_time) {
 void Game::_updateCamera(double delta_time) {
   (void)delta_time;
   if (m_player) {
-    // m_cameraController.follow(m_testObject->getPosition());
-    m_cameraController.follow({0.0f, 0.0f, 0.0f});
+    m_cameraController.follow(m_player->getPosition());
+    // m_cameraController.follow({0.0f, 0.0f, 0.0f});
   }
 }

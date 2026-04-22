@@ -1,10 +1,9 @@
 #pragma once
 
-#include "graphics/animation.hpp"
-#include "graphics/animator.hpp"
 #include "graphics/camera.hpp"
 #include "graphics/camera_controller.hpp"
 #include "graphics/skybox.hpp"
+#include "scene/enemy.hpp"
 #include "scene/player.hpp"
 
 #include <glad/gl.h>
@@ -29,6 +28,7 @@ private:
   CameraController m_cameraController;
   std::unique_ptr<Skybox> m_skybox;
   std::unique_ptr<Player> m_player;
+  std::unique_ptr<Enemy> m_testEnemy;
 
   // Shadow mapping
   GLuint m_shadowMapFBO;

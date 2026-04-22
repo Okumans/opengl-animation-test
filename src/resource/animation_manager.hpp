@@ -6,7 +6,13 @@
 
 #include <memory>
 
-enum class AnimationName { KASANE_TETO_IDLE, KASANE_TETO_WALKING };
+enum class AnimationName {
+  KASANE_TETO_IDLE,
+  KASANE_TETO_WALKING,
+  KASANE_TETO_RUNNING,
+  HATSUNE_MIKU_IDLE,
+  HATSUNE_MIKU_WALKING,
+};
 
 class AnimationManager {
 public:

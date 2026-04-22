@@ -28,7 +28,8 @@ protected:
 public:
   GameObject(std::shared_ptr<Model> model, glm::vec3 pos = glm::vec3(0.0f),
              glm::vec3 scale = glm::vec3(1.0f),
-             glm::vec3 rotation = glm::vec3(0.0f));
+             glm::vec3 rotation = glm::vec3(0.0f),
+             bool defer_aabb_calculation = false);
 
   virtual ~GameObject() = default;
 

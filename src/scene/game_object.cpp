@@ -4,18 +4,23 @@
 #include <stdexcept>
 
 GameObject::GameObject(std::shared_ptr<Model> model, glm::vec3 pos,
-                       glm::vec3 scale, glm::vec3 rotation)
+                       glm::vec3 scale, glm::vec3 rotation,
+                       bool defer_aabb_calculation)
     : m_model(model), m_position(pos), m_rotation(rotation), m_scale(scale) {
   if (!m_model) {
-    throw std::runtime_error("Attempted to construct GameObject with null model");
+    throw std::runtime_error(
+        "Attempted to construct GameObject with null model");
   }
-  
-  m_baseAABB = _calculateBaseAABB(*m_model);
+
+  if (!defer_aabb_calculation)
+    m_baseAABB = _calculateBaseAABB(*m_model);
+
   m_isTransformDirty = true;
 }
 
 void GameObject::draw(const RenderContext &ctx) {
-  if (!m_model) return;
+  if (!m_model)
+    return;
 
   _updateTransform();
 
@@ -68,7 +73,8 @@ const AABB &GameObject::getWorldAABB() const {
 
 AABB GameObject::getHitboxAABB() const {
   const AABB &world = getWorldAABB();
-  if (!m_enableHitboxScaling) return world;
+  if (!m_enableHitboxScaling)
+    return world;
 
   AABB hitbox = world;
   glm::vec3 center = hitbox.getCenter();
@@ -96,18 +102,19 @@ void GameObject::forceRecalculateAABB() {
 }
 
 void GameObject::_updateTransform() const {
-  if (!m_isTransformDirty) return;
+  if (!m_isTransformDirty)
+    return;
 
   m_modelMatrix = glm::mat4(1.0f);
   m_modelMatrix = glm::translate(m_modelMatrix, m_position);
 
   // Apply rotations (Y, then X, then Z, or adjust based on convention)
-  m_modelMatrix =
-      glm::rotate(m_modelMatrix, glm::radians(m_rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-  m_modelMatrix =
-      glm::rotate(m_modelMatrix, glm::radians(m_rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-  m_modelMatrix =
-      glm::rotate(m_modelMatrix, glm::radians(m_rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+  m_modelMatrix = glm::rotate(m_modelMatrix, glm::radians(m_rotation.y),
+                              glm::vec3(0.0f, 1.0f, 0.0f));
+  m_modelMatrix = glm::rotate(m_modelMatrix, glm::radians(m_rotation.x),
+                              glm::vec3(1.0f, 0.0f, 0.0f));
+  m_modelMatrix = glm::rotate(m_modelMatrix, glm::radians(m_rotation.z),
+                              glm::vec3(0.0f, 0.0f, 1.0f));
 
   m_modelMatrix = glm::scale(m_modelMatrix, m_scale);
 
@@ -120,7 +127,7 @@ void GameObject::_updateTransform() const {
 
 AABB GameObject::_calculateBaseAABB(const Model &model) {
   AABB aabb = AABB::empty();
-  
+
   for (const auto &mesh : model.getMeshes()) {
     for (const auto &vertex : mesh.getVertices()) {
       aabb.grow(vertex.position);

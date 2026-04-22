@@ -193,6 +193,9 @@ void App::_setupResources() {
   m_loadingTasks.push_back(
       {"Model: Kasane Teto", loadModel(ModelName::KASANE_TETO, ASSETS_PATH
                                        "/objects/kasane_teto/teto.dae")});
+  m_loadingTasks.push_back(
+      {"Model: Hatsune Miku", loadModel(ModelName::HATSUNE_MIKU, ASSETS_PATH
+                                        "/objects/hatsune_miku/miku.dae")});
 
   // Animations
   m_loadingTasks.push_back({"Animation: Kasane Teto Idle",
@@ -205,6 +208,21 @@ void App::_setupResources() {
                                           ASSETS_PATH "/objects/kasane_teto/"
                                                       "teto_walking_normal.dae",
                                           ModelName::KASANE_TETO)});
+  m_loadingTasks.push_back({"Animation: Kasane Teto Running",
+                            loadAnimation(AnimationName::KASANE_TETO_RUNNING,
+                                          ASSETS_PATH "/objects/kasane_teto/"
+                                                      "teto_running.dae",
+                                          ModelName::KASANE_TETO)});
+  m_loadingTasks.push_back({"Animation: Hatsune Miku Walking",
+                            loadAnimation(AnimationName::HATSUNE_MIKU_IDLE,
+                                          ASSETS_PATH "/objects/hatsune_miku/"
+                                                      "miku_idle.dae",
+                                          ModelName::HATSUNE_MIKU)});
+  m_loadingTasks.push_back({"Animation: Hatsune Miku Walking",
+                            loadAnimation(AnimationName::HATSUNE_MIKU_WALKING,
+                                          ASSETS_PATH "/objects/hatsune_miku/"
+                                                      "miku_walking.dae",
+                                          ModelName::HATSUNE_MIKU)});
 
   // Static texture generation
   m_loadingTasks.push_back(
