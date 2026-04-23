@@ -8,12 +8,12 @@ template <typename T, typename Counter = float>
   requires std::integral<Counter> || std::floating_point<Counter>
 struct AnimationState {
   NotInitialized<Counter, "duration"> duration;
-  Counter timer;
+  Counter timer{};
 
-  T target;
-  T start;
+  T target{};
+  T start{};
 
-  bool animationStarted;
+  bool animationStarted = false;
 
   Counter updateTimer(Counter delta_time) {
     timer += delta_time;

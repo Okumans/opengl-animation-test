@@ -213,6 +213,7 @@ void App::_setupResources() {
                                           ASSETS_PATH "/objects/kasane_teto/"
                                                       "teto_running.dae",
                                           ModelName::KASANE_TETO)});
+
   m_loadingTasks.push_back({"Animation: Hatsune Miku Walking",
                             loadAnimation(AnimationName::HATSUNE_MIKU_IDLE,
                                           ASSETS_PATH "/objects/hatsune_miku/"

@@ -128,6 +128,11 @@ void Game::update(double delta_time) {
   _updateCamera(delta_time);
   m_cameraController.update(static_cast<float>(delta_time));
   m_player->update(delta_time);
+
+  if (m_player && m_testEnemy) {
+    m_testEnemy->setPlayerPosition(m_player->getPosition());
+  }
+
   m_testEnemy->update(delta_time);
 }
 

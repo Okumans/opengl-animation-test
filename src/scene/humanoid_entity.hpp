@@ -3,15 +3,15 @@
 #include "glm/common.hpp"
 #include "glm/fwd.hpp"
 #include "glm/geometric.hpp"
-#include "glm/trigonometric.hpp"
 #include "graphics/animation.hpp"
-#include "graphics/animation_state.hpp"
 #include "graphics/animator.hpp"
 #include "scene/game_object.hpp"
+#include "scene/humanoid_locomotion_state.hpp"
 #include "utility/not_initialized.hpp"
 #include "utility/utility.hpp"
 #include <cassert>
 #include <memory>
+#include <type_traits>
 
 template <typename AnimationTypes>
   requires std::is_enum_v<AnimationTypes> && requires {
@@ -26,9 +26,7 @@ protected:
       m_animations;
   NotInitialized<Animator, "m_animator"> m_animator;
   AnimationTypes m_playingAnimation = AnimationTypes::IDLE;
-
-  AnimationState<float> m_rotateState;
-  AnimationState<glm::vec3> m_positionState;
+  HumanoidLocomotionState m_locomotion;
 
 public:
   HumaniodEntity(std::shared_ptr<Model> model, glm::vec3 pos = glm::vec3(0.0f),
@@ -45,32 +43,22 @@ public:
     if (glm::length(vec) < 0.001f)
       return;
 
-    glm::vec3 new_target_pos = m_position + vec;
-    float target_yaw = glm::degrees(std::atan2(vec.x, vec.z));
-
     _setAnimation(AnimationTypes::WALKING);
 
-    m_positionState.startAnimation(m_position, new_target_pos);
-    m_rotateState.startAnimation(m_rotation.y, target_yaw);
-
-    m_positionState.timer = 0;
-    m_rotateState.timer = 0;
+    m_locomotion.startMove(m_position, m_rotation, vec);
   }
 
   virtual void move(glm::vec3 vec) {
-    m_rotateState.reset();
-    m_positionState.reset();
+    m_locomotion.reset();
 
-    m_position += vec;
-    m_rotation = glm::normalize(m_position);
+    translate(vec);
   }
 
   virtual void update(double delta_time) override {
     _updateRotateAnimationState(delta_time);
     _updatePositionAnimationState(delta_time);
 
-    if (m_positionState.animationStarted == false &&
-        m_rotateState.animationStarted == false) {
+    if (!m_locomotion.isMoving()) {
       _setAnimation(AnimationTypes::IDLE);
     }
 
@@ -107,34 +95,35 @@ protected:
   }
 
   virtual void _updateRotateAnimationState(double delta_time) {
-    if (!m_rotateState.animationStarted)
+    if (!m_locomotion.rotateState.animationStarted)
       return;
 
-    m_rotateState.updateTimer((float)delta_time);
-    float t = m_rotateState.getProgress();
+    m_locomotion.rotateState.updateTimer((float)delta_time);
+    float t = m_locomotion.rotateState.getProgress();
 
-    float current_yaw = lerpAngle(m_rotateState.start, m_rotateState.target, t);
+    float current_yaw = lerpAngle(m_locomotion.rotateState.start,
+                                  m_locomotion.rotateState.target, t);
 
     setRotation({0.0f, current_yaw, 0.0f});
 
     if (t >= 1.0f) {
-      m_rotateState.animationStarted = false;
+      m_locomotion.rotateState.animationStarted = false;
       m_rotation.y = std::fmod(m_rotation.y, 360.0f);
     }
   }
 
   virtual void _updatePositionAnimationState(double delta_time) {
-    if (!m_positionState.animationStarted)
+    if (!m_locomotion.positionState.animationStarted)
       return;
 
-    m_positionState.updateTimer(delta_time);
-    float t = m_positionState.getProgress();
+    m_locomotion.positionState.updateTimer(delta_time);
+    float t = m_locomotion.positionState.getProgress();
 
     if (t == 1.0)
-      m_positionState.animationStarted = false;
+      m_locomotion.positionState.animationStarted = false;
 
-    glm::vec3 current_pos =
-        glm::mix(m_positionState.start, m_positionState.target, t);
+    glm::vec3 current_pos = glm::mix(m_locomotion.positionState.start,
+                                     m_locomotion.positionState.target, t);
 
     setPosition(current_pos);
   }
@@ -144,8 +133,9 @@ protected:
     animator.updateAnimation(delta_time);
   }
 
+  [[nodiscard]] bool isMoving() const { return m_locomotion.isMoving(); }
+
   inline virtual void _setupAnimationDuration() {
-    m_positionState.duration.init(0.3f);
-    m_rotateState.duration.init(0.2f);
+    m_locomotion.setup(0.3f, 0.2f);
   }
 };
