@@ -2,6 +2,10 @@
 
 A animation test built with C++ and OpenGL.
 
+
+https://github.com/user-attachments/assets/a925fd2c-7c53-4f74-9714-eaf98666e202
+
+
 ## Quick Start
 
 ### Prerequisites
