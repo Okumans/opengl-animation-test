@@ -197,8 +197,11 @@ void App::_setupResources() {
       {"Model: Hatsune Miku", loadModel(ModelName::HATSUNE_MIKU, ASSETS_PATH
                                         "/objects/hatsune_miku/miku.dae")});
   m_loadingTasks.push_back(
-      {"Model: Coin", loadModel(ModelName::COIN, ASSETS_PATH
-                                 "/objects/items/coin.glb")});
+      {"Model: Coin",
+       loadModel(ModelName::COIN, ASSETS_PATH "/objects/items/coin.glb")});
+  m_loadingTasks.push_back(
+      {"Model: City",
+       loadModel(ModelName::CITY, ASSETS_PATH "/objects/map/city.glb")});
 
   // Animations
   m_loadingTasks.push_back({"Animation: Kasane Teto Idle",
@@ -215,6 +218,11 @@ void App::_setupResources() {
                             loadAnimation(AnimationName::KASANE_TETO_RUNNING,
                                           ASSETS_PATH "/objects/kasane_teto/"
                                                       "teto_running.dae",
+                                          ModelName::KASANE_TETO)});
+  m_loadingTasks.push_back({"Animation: Kasane Teto Dancing",
+                            loadAnimation(AnimationName::KASANE_TETO_DANCING,
+                                          ASSETS_PATH "/objects/kasane_teto/"
+                                                      "teto_dancing.dae",
                                           ModelName::KASANE_TETO)});
 
   m_loadingTasks.push_back({"Animation: Hatsune Miku Walking",
@@ -293,8 +301,8 @@ void App::_setupUIElements() {
 
   // Start Screen
   m_uiManager.addTextElement("start_title", {0.0f, 15.0f, 0.0f, 0.0f},
-                             "VAMPIRE SURVIVOR", m_font,
-                             {1.0f, 0.0f, 0.0f, 1.0f}, 0.3f);
+                             "ANIMATION TEST", m_font, {1.0f, 0.0f, 0.0f, 1.0f},
+                             0.3f);
   m_uiManager.addTextElement("start_hint", {0.0f, 20.0f, 0.0f, 0.0f},
                              "CLICK TO START", m_font, {1.0f, 1.0f, 1.0f, 1.0f},
                              0.15f);
@@ -407,7 +415,7 @@ void App::_handleKeyCallback(int key, int scancode, int action, int mods) {
       m_game.startGame();
       break;
     case GameState::PLAYING:
-      // Removed Crossy Road forward
+      m_game.playerDance();
       break;
     case GameState::GAME_OVER:
       m_game.reset();

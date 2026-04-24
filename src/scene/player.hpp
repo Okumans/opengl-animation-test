@@ -8,14 +8,21 @@
 #include <cassert>
 #include <memory>
 
-enum class PlayerAnimation { IDLE, WALKING, RUNNING };
+enum class PlayerAnimation { IDLE, WALKING, RUNNING, DANCING };
 
 class Player : public HumaniodEntity<PlayerAnimation> {
+private:
+  bool m_isDancing = false;
+
 public:
   Player(std::shared_ptr<Model> model, glm::vec3 pos = glm::vec3(0.0f),
          glm::vec3 scale = glm::vec3(1.0f),
          glm::vec3 rotation = glm::vec3(0.0f))
       : HumaniodEntity<PlayerAnimation>(model, pos, scale, rotation) {}
+
+  [[nodiscard]] GameObjectType getObjectType() const override {
+    return GameObjectType::PLAYER;
+  }
 
   void setup() override {
     AnimationManager::ensureInit();
@@ -28,6 +35,9 @@ public:
     m_animations.set(
         PlayerAnimation::RUNNING,
         AnimationManager::copy(AnimationName::KASANE_TETO_RUNNING));
+    m_animations.set(
+      PlayerAnimation::DANCING,
+      AnimationManager::copy(AnimationName::KASANE_TETO_DANCING));
 
     assert(m_animations.isInitialized());
 
@@ -36,5 +46,30 @@ public:
                         .get());
 
     HumaniodEntity<PlayerAnimation>::_setupAnimationDuration();
+  }
+
+  void dance() {
+    m_isDancing = true;
+    _setAnimation(PlayerAnimation::DANCING);
+  }
+
+  void moveWithAnimation(glm::vec3 vec) override {
+    m_isDancing = false;
+    HumaniodEntity<PlayerAnimation>::moveWithAnimation(vec);
+  }
+
+  void update(double delta_time) override {
+    _updateRotateAnimationState(delta_time);
+    _updatePositionAnimationState(delta_time);
+
+    if (!m_locomotion.isMoving()) {
+      if (m_isDancing) {
+        _setAnimation(PlayerAnimation::DANCING);
+      } else {
+        _setAnimation(PlayerAnimation::IDLE);
+      }
+    }
+
+    _updateAnimation(delta_time);
   }
 };

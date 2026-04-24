@@ -2,12 +2,13 @@
 
 #include "graphics/camera.hpp"
 #include "graphics/camera_controller.hpp"
+#include "graphics/shadow_map.hpp"
 #include "graphics/skybox.hpp"
 #include "scene/game_object_manager.hpp"
-#include "scene/enemy.hpp"
 #include "scene/item.hpp"
 #include "scene/player.hpp"
 #include "utility/event_bus.hpp"
+#include "utility/not_initialized.hpp"
 
 #include <glad/gl.h>
 #include <glm/glm.hpp>
@@ -45,20 +46,13 @@ private:
   Camera m_camera;
   CameraController m_cameraController;
   std::unique_ptr<Skybox> m_skybox;
+  std::unique_ptr<ShadowMap> m_shadowMap;
   GameObjectManager m_objects;
   EventBus m_eventBus;
 
   int m_score = 0;
 
-  Player *m_player = nullptr;
-  Enemy *m_testEnemy = nullptr;
-  Item *m_testItem = nullptr;
-
-  // Shadow mapping
-  GLuint m_shadowMapFBO;
-  GLuint m_shadowMapTex;
-  const unsigned int SHADOW_WIDTH = 4096, SHADOW_HEIGHT = 4096;
-  glm::mat4 m_lightSpaceMatrix;
+  NotInitialized<Player *> m_player;
 
   float m_currentTime = 0.0f;
 
@@ -78,13 +72,14 @@ public:
   void startGame();
 
   void movePlayer(glm::vec3 vec);
+  void playerDance();
 
   void setDebugAABB(bool state) { m_debugAABB = state; }
 
   Camera &getCamera() { return m_camera; }
   CameraController &getCameraController() { return m_cameraController; }
   GameState getState() const { return m_state; }
-  uint32_t getScore() const { return 0; }
+  uint32_t getScore() const { return static_cast<uint32_t>(m_score); }
 
 private:
   void _registerGameplayEventHandlers();

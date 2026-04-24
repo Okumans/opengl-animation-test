@@ -55,7 +55,7 @@ GLFWwindow *initialize_window(int width, int height, const char *title) {
 //_________________________________________________MAIN______________________________________________________________//
 
 int main() {
-  GLFWwindow *window = initialize_window(800, 600, "vampire survivor");
+  GLFWwindow *window = initialize_window(800, 600, "animation test");
 
   double last_frame_time = glfwGetTime();
 
